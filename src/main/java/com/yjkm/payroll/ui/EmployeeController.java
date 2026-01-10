@@ -8,32 +8,35 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDate;
 
 public class EmployeeController {
     private static final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
     private final EmployeeService employeeService = new EmployeeService();
     private final ObservableList<Employee> employees = FXCollections.observableArrayList();
+
+    // UI 컸라모 저장
     private TableView<Employee> employeeTable;
-    private Employee selectedEmployee = new Employee();
     private TextField searchField;
+    private TextField numField;
+    private TextField nameField;
+    private TextField deptField;
+    private TextField posField;
+    private TextField wageField;
+    private DatePicker hirePicker;
+    private DatePicker resPicker;
+    private CheckBox activeCheck;
+
+    private Employee selectedEmployee = new Employee();
 
     public BorderPane createEmployeeView() {
         BorderPane root = new BorderPane();
-
-        // 상단: 검색 영역
         root.setTop(createSearchPanel());
-
-        // 중앙: 테이블
         root.setCenter(createTablePanel());
-
-        // 우측: 상세 폼
         root.setRight(createDetailForm());
-
         loadEmployees();
         return root;
     }
@@ -48,6 +51,7 @@ public class EmployeeController {
         searchField = new TextField();
         searchField.setPromptText("이름 또는 부서 입력...");
         searchField.setPrefWidth(200);
+
         Button searchBtn = new Button("검색");
         searchBtn.setOnAction(e -> handleSearch());
         Button resetBtn = new Button("초기화");
@@ -55,43 +59,43 @@ public class EmployeeController {
 
         searchBox.getChildren().addAll(label, searchField, searchBtn, resetBtn);
         vbox.getChildren().add(searchBox);
-
         return vbox;
     }
 
     private VBox createTablePanel() {
-        VBox vbox = new VBox();
+        VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(10));
 
         employeeTable = new TableView<>();
         employeeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
+        // 컬럼 정의
         TableColumn<Employee, Long> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue().getId()));
         idCol.setPrefWidth(50);
 
         TableColumn<Employee, String> numCol = new TableColumn<>("직원번호");
-        numCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getEmployeeNumber()));
+        numCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getEmployeeNumber() != null ? c.getValue().getEmployeeNumber() : ""));
         numCol.setPrefWidth(100);
 
         TableColumn<Employee, String> nameCol = new TableColumn<>("이름");
-        nameCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getName()));
+        nameCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getName() != null ? c.getValue().getName() : ""));
         nameCol.setPrefWidth(100);
 
         TableColumn<Employee, String> deptCol = new TableColumn<>("부서");
-        deptCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getDepartment()));
+        deptCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getDepartment() != null ? c.getValue().getDepartment() : ""));
         deptCol.setPrefWidth(100);
 
         TableColumn<Employee, String> posCol = new TableColumn<>("직급");
-        posCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getPosition()));
+        posCol.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getPosition() != null ? c.getValue().getPosition() : ""));
         posCol.setPrefWidth(100);
 
         TableColumn<Employee, Integer> wageCol = new TableColumn<>("시급");
-        wageCol.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue().getHourlyWage()));
+        wageCol.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue().getHourlyWage() != null ? c.getValue().getHourlyWage() : 0));
         wageCol.setPrefWidth(80);
 
         TableColumn<Employee, Boolean> activeCol = new TableColumn<>("재직");
-        activeCol.setCellValueFactory(c -> new javafx.beans.property.SimpleBooleanProperty(c.getValue().getIsActive()));
+        activeCol.setCellValueFactory(c -> new javafx.beans.property.SimpleBooleanProperty(c.getValue().getIsActive() != null ? c.getValue().getIsActive() : false));
         activeCol.setPrefWidth(50);
 
         employeeTable.getColumns().addAll(idCol, numCol, nameCol, deptCol, posCol, wageCol, activeCol);
@@ -99,14 +103,14 @@ public class EmployeeController {
         employeeTable.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) -> {
             if (newVal != null) {
                 selectedEmployee = newVal;
-                populateDetailForm(newVal);
+                updateDetailForm();
             }
         });
 
-        VBox.setVgrow(employeeTable, javafx.geometry.Priority.ALWAYS);
+        VBox.setVgrow(employeeTable, Priority.ALWAYS);
         vbox.getChildren().add(employeeTable);
 
-        // 하단: 버튼
+        // 버튼
         HBox buttonBox = new HBox(10);
         buttonBox.setPadding(new Insets(10));
         Button addBtn = new Button("신규");
@@ -133,36 +137,35 @@ public class EmployeeController {
 
         // 각 필드
         Label numLabel = new Label("직원번호:");
-        TextField numField = new TextField();
+        numField = new TextField();
         numField.setEditable(false);
 
         Label nameLabel = new Label("이름:");
-        TextField nameField = new TextField();
+        nameField = new TextField();
 
         Label deptLabel = new Label("부서:");
-        TextField deptField = new TextField();
+        deptField = new TextField();
 
         Label posLabel = new Label("직급:");
-        TextField posField = new TextField();
+        posField = new TextField();
 
         Label wageLabel = new Label("시급:");
-        TextField wageField = new TextField();
+        wageField = new TextField();
 
         Label hireLabel = new Label("입사일:");
-        DatePicker hirePicker = new DatePicker();
+        hirePicker = new DatePicker();
 
         Label resLabel = new Label("퇴사일:");
-        DatePicker resPicker = new DatePicker();
+        resPicker = new DatePicker();
 
         Label activeLabel = new Label("재직 상태:");
-        CheckBox activeCheck = new CheckBox("재직중");
+        activeCheck = new CheckBox("재직중");
 
-        // 버튼
+        // 저장/취소 버튼
         HBox btnBox = new HBox(10);
         Button saveBtn = new Button("저장");
         saveBtn.setPrefWidth(100);
-        saveBtn.setOnAction(e -> handleSaveEmployee(numField, nameField, deptField, posField,
-                wageField, hirePicker, resPicker, activeCheck));
+        saveBtn.setOnAction(e -> handleSaveEmployee());
         Button cancelBtn = new Button("취소");
         cancelBtn.setPrefWidth(100);
         cancelBtn.setOnAction(e -> handleCancel());
@@ -184,9 +187,6 @@ public class EmployeeController {
                 btnBox
         );
 
-        // 필드 레퍼런스 저장 (나중에 사용하기 위해)
-        vbox.setUserData(new Object[]{numField, nameField, deptField, posField, wageField, hirePicker, resPicker, activeCheck});
-
         return vbox;
     }
 
@@ -194,14 +194,10 @@ public class EmployeeController {
         try {
             employees.clear();
             employees.addAll(employeeService.getAllEmployees());
-            logger.info("직원 목록 로드 완료: {} 명", employees.size());
+            logger.info("✅ 직원 목록 로드 완료: {} 명", employees.size());
         } catch (Exception e) {
-            logger.error("직원 목록 로드 실패", e);
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("오류");
-            alert.setHeaderText("직원 목록을 불러올 수 없습니다");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            logger.error("❌ 직원 목록 로드 실패", e);
+            showError("직원 목록을 불러올 수 없습니다", e.getMessage());
         }
     }
 
@@ -214,8 +210,9 @@ public class EmployeeController {
         try {
             employees.clear();
             employees.addAll(employeeService.searchEmployees(keyword));
+            logger.info("✅ 검색 완료: {} 건", employees.size());
         } catch (Exception e) {
-            logger.error("검색 실패", e);
+            logger.error("❌ 검색 실패", e);
         }
     }
 
@@ -226,15 +223,12 @@ public class EmployeeController {
 
     private void handleNewEmployee() {
         selectedEmployee = new Employee();
-        populateDetailForm(new Employee());
+        clearDetailForm();
     }
 
     private void handleDeleteEmployee() {
         if (selectedEmployee == null || selectedEmployee.getId() == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("경고");
-            alert.setHeaderText("삭제할 직원을 선택하세요");
-            alert.showAndWait();
+            showWarning("삭제할 직원을 선택하세요");
             return;
         }
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
@@ -245,26 +239,29 @@ public class EmployeeController {
             try {
                 employeeService.deleteEmployee(selectedEmployee.getId());
                 loadEmployees();
-                handleCancel();
+                clearDetailForm();
+                logger.info("✅ 직원 삭제 완료");
             } catch (Exception e) {
-                logger.error("삭제 실패", e);
+                logger.error("❌ 삭제 실패", e);
             }
         }
     }
 
-    private void populateDetailForm(Employee emp) {
-        // DetailForm의 필드들을 찾아서 채우기
-        // (이 부분은 실제로는 Controller와 View를 분리해야 하지만, 간단히 구현)
+    private void updateDetailForm() {
+        if (selectedEmployee == null) return;
+        numField.setText(selectedEmployee.getEmployeeNumber() != null ? selectedEmployee.getEmployeeNumber() : "");
+        nameField.setText(selectedEmployee.getName() != null ? selectedEmployee.getName() : "");
+        deptField.setText(selectedEmployee.getDepartment() != null ? selectedEmployee.getDepartment() : "");
+        posField.setText(selectedEmployee.getPosition() != null ? selectedEmployee.getPosition() : "");
+        wageField.setText(selectedEmployee.getHourlyWage() != null ? selectedEmployee.getHourlyWage().toString() : "");
+        hirePicker.setValue(selectedEmployee.getHireDate());
+        resPicker.setValue(selectedEmployee.getResignationDate());
+        activeCheck.setSelected(selectedEmployee.getIsActive() != null && selectedEmployee.getIsActive());
     }
 
-    private void handleSaveEmployee(TextField numField, TextField nameField, TextField deptField,
-                                    TextField posField, TextField wageField, DatePicker hirePicker,
-                                    DatePicker resPicker, CheckBox activeCheck) {
+    private void handleSaveEmployee() {
         if (nameField.getText().trim().isEmpty() || numField.getText().trim().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("경고");
-            alert.setHeaderText("이름과 직원번호를 입력하세요");
-            alert.showAndWait();
+            showWarning("이름과 직원번호를 입력하세요");
             return;
         }
         try {
@@ -282,19 +279,43 @@ public class EmployeeController {
 
             employeeService.saveEmployee(selectedEmployee);
             loadEmployees();
-            handleCancel();
-            logger.info("직원 저장 완료: {}", selectedEmployee.getName());
+            clearDetailForm();
+            logger.info("✅ 직원 저장 완료: {}", selectedEmployee.getName());
         } catch (NumberFormatException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("오류");
-            alert.setHeaderText("시급은 숫자로 입력하세요");
-            alert.showAndWait();
+            showError("오류", "시급은 숫자로 입력하세요");
         } catch (Exception e) {
-            logger.error("저장 실패", e);
+            logger.error("❌ 저장 실패", e);
+            showError("정장", e.getMessage());
         }
     }
 
     private void handleCancel() {
         selectedEmployee = new Employee();
+        clearDetailForm();
+    }
+
+    private void clearDetailForm() {
+        numField.clear();
+        nameField.clear();
+        deptField.clear();
+        posField.clear();
+        wageField.clear();
+        hirePicker.setValue(null);
+        resPicker.setValue(null);
+        activeCheck.setSelected(false);
+    }
+
+    private void showWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("경고");
+        alert.setHeaderText(message);
+        alert.showAndWait();
+    }
+
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(message);
+        alert.showAndWait();
     }
 }
