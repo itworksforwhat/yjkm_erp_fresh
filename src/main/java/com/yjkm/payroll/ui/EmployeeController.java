@@ -1,6 +1,7 @@
 package com.yjkm.payroll.ui;
 
 import com.yjkm.payroll.model.Employee;
+import com.yjkm.payroll.service.EmployeeImportService;
 import com.yjkm.payroll.service.EmployeeService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -11,15 +12,18 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 public class EmployeeController {
     private static final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
     private final EmployeeService employeeService = new EmployeeService();
+    private final EmployeeImportService importService = new EmployeeImportService();
     private final ObservableList<Employee> employees = FXCollections.observableArrayList();
 
-    // UI 캐러모 저장
     private TableView<Employee> employeeTable;
     private TextField searchField;
     private TextField numField;
@@ -30,7 +34,6 @@ public class EmployeeController {
     private DatePicker hirePicker;
     private DatePicker resPicker;
     private CheckBox activeCheck;
-
     private Employee selectedEmployee = new Employee();
 
     public BorderPane createEmployeeView() {
@@ -38,10 +41,7 @@ public class EmployeeController {
         root.setTop(createSearchPanel());
         root.setCenter(createTablePanel());
         root.setRight(createDetailForm());
-        
-        // UI 먼저 보여주고 나중에 DB 로드 (백그라운드 스레드)
         Platform.runLater(this::loadEmployeesAsync);
-        
         return root;
     }
 
@@ -73,7 +73,6 @@ public class EmployeeController {
         employeeTable = new TableView<>();
         employeeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        // 컬럼 정의
         TableColumn<Employee, Long> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(c -> new javafx.beans.property.SimpleObjectProperty<>(c.getValue().getId()));
         idCol.setPrefWidth(50);
@@ -114,17 +113,21 @@ public class EmployeeController {
         VBox.setVgrow(employeeTable, Priority.ALWAYS);
         vbox.getChildren().add(employeeTable);
 
-        // 버튼
         HBox buttonBox = new HBox(10);
         buttonBox.setPadding(new Insets(10));
         Button addBtn = new Button("신규");
         addBtn.setOnAction(e -> handleNewEmployee());
         Button delBtn = new Button("삭제");
         delBtn.setOnAction(e -> handleDeleteEmployee());
+        
+        // 파일 임포트 버튼 추가!
+        Button importBtn = new Button("파일에서 가져오기");
+        importBtn.setOnAction(e -> handleImportFromFile());
+        
         Button exportBtn = new Button("엑셀로 내보내기");
         exportBtn.setOnAction(e -> logger.info("엑셀 내보내기 기능은 나중에 구현..."));
 
-        buttonBox.getChildren().addAll(addBtn, delBtn, exportBtn);
+        buttonBox.getChildren().addAll(addBtn, delBtn, importBtn, exportBtn);
         vbox.getChildren().add(buttonBox);
 
         return vbox;
@@ -139,10 +142,8 @@ public class EmployeeController {
         Label titleLabel = new Label("직원 상세정보");
         titleLabel.setStyle("-fx-font-size: 14; -fx-font-weight: bold;");
 
-        // 각 필드
         Label numLabel = new Label("직원번호:");
         numField = new TextField();
-        numField.setEditable(false);
 
         Label nameLabel = new Label("이름:");
         nameField = new TextField();
@@ -165,7 +166,6 @@ public class EmployeeController {
         Label activeLabel = new Label("재직 상태:");
         activeCheck = new CheckBox("재직중");
 
-        // 저장/취소 버튼
         HBox btnBox = new HBox(10);
         Button saveBtn = new Button("저장");
         saveBtn.setPrefWidth(100);
@@ -194,7 +194,33 @@ public class EmployeeController {
         return vbox;
     }
 
-    // 백그라운드에서 직원 로드 (UI 블로킹 안 함)
+    private void handleImportFromFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("직원 파일 선택");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("모든 지원 파일", "*.csv", "*.txt", "*.xlsx", "*.xls"),
+                new FileChooser.ExtensionFilter("CSV 파일", "*.csv"),
+                new FileChooser.ExtensionFilter("텍스트 파일", "*.txt"),
+                new FileChooser.ExtensionFilter("엑셀 파일", "*.xlsx", "*.xls")
+        );
+
+        File file = fileChooser.showOpenDialog(null);
+        if (file != null) {
+            try {
+                int count = importService.importFromFile(file);
+                loadEmployees();
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("성공");
+                alert.setHeaderText("임포트 완료");
+                alert.setContentText(count + "명의 직원을 불러왔습니다.");
+                alert.showAndWait();
+            } catch (Exception e) {
+                logger.error("임포트 실패", e);
+                showError("임포트 실패", e.getMessage());
+            }
+        }
+    }
+
     private void loadEmployeesAsync() {
         Thread thread = new Thread(() -> {
             try {
@@ -206,7 +232,6 @@ public class EmployeeController {
                 });
             } catch (Exception e) {
                 logger.warn("⚠️ 직원 목록 로드 실패 (무시 가능): {}", e.getMessage());
-                // 데이터베이스가 없어도 UI는 계속 작동
             }
         });
         thread.setDaemon(true);
@@ -217,7 +242,7 @@ public class EmployeeController {
         try {
             employees.clear();
             employees.addAll(employeeService.getAllEmployees());
-            logger.info("✅ 직원 목록 로드 완료: {} 명", employees.size());
+            logger.info("✅ 직원 목록 로드 완룼: {} 명", employees.size());
         } catch (Exception e) {
             logger.error("❌ 직원 목록 로드 실패", e);
         }
@@ -307,7 +332,7 @@ public class EmployeeController {
             showError("오류", "시급은 숫자로 입력하세요");
         } catch (Exception e) {
             logger.error("❌ 저장 실패", e);
-            showError("정장", e.getMessage());
+            showError("저장 실패", e.getMessage());
         }
     }
 
