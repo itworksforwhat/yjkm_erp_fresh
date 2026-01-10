@@ -37,7 +37,7 @@ public class EmployeeImportService {
 
     /**
      * CSV 파일 임포트
-     * 형식: 직원번호,이름,부서,직급,시급,입사일
+     * 형식: 날짜,시간,사원번호,이름,부서코드,부서명,직급,주민번호,휴대폰,근무형태,... (최대 19개 필드)
      */
     private int importFromCSV(File file) throws Exception {
         List<Employee> employees = new ArrayList<>();
@@ -45,11 +45,10 @@ public class EmployeeImportService {
             String line;
             boolean firstLine = true;
             while ((line = br.readLine()) != null) {
-                // 첨번째 줄은 헤더로 간주 (선택사항)
                 if (firstLine) {
                     firstLine = false;
-                    if (line.contains("직원번호") || line.contains("이름")) {
-                        continue; // 헤더 스킬
+                    if (line.contains("날짜") || line.contains("사원번호") || line.contains("이름")) {
+                        continue; // 헤더 스킵
                     }
                 }
                 Employee emp = parseCSVLine(line);
@@ -62,7 +61,7 @@ public class EmployeeImportService {
     }
 
     /**
-     * TXT 파일 임포트 (탭 구분 또는 쉼표 구분)
+     * TXT 파일 임포트 (탭 구분)
      */
     private int importFromTXT(File file) throws Exception {
         List<Employee> employees = new ArrayList<>();
@@ -72,7 +71,7 @@ public class EmployeeImportService {
             while ((line = br.readLine()) != null) {
                 if (firstLine) {
                     firstLine = false;
-                    if (line.contains("직원번호") || line.contains("이름")) {
+                    if (line.contains("날짜") || line.contains("사원번호")) {
                         continue;
                     }
                 }
@@ -97,7 +96,7 @@ public class EmployeeImportService {
             for (Row row : sheet) {
                 if (firstRow) {
                     firstRow = false;
-                    continue; // 헤더 스킬
+                    continue; // 헤더 스킵
                 }
                 Employee emp = parseExcelRow(row);
                 if (emp != null) {
@@ -111,18 +110,29 @@ public class EmployeeImportService {
     private Employee parseCSVLine(String line) {
         try {
             String[] parts = line.split(",");
-            if (parts.length < 5) return null;
+            if (parts.length < 4) return null;
 
             Employee emp = new Employee();
-            emp.setEmployeeNumber(parts[0].trim());
-            emp.setName(parts[1].trim());
-            emp.setDepartment(parts[2].trim());
-            emp.setPosition(parts[3].trim());
-            emp.setHourlyWage(Integer.parseInt(parts[4].trim()));
-            if (parts.length > 5 && !parts[5].trim().isEmpty()) {
-                emp.setHireDate(LocalDate.parse(parts[5].trim(), DateTimeFormatter.ISO_LOCAL_DATE));
+            // 형식: 날짜(0), 시간(1), 사원번호(2), 이름(3), 부서코드(4), 부서명(5), 직급(6), ...
+            
+            emp.setEmployeeNumber(parts[2].trim());
+            emp.setName(parts[3].trim());
+            
+            // 부서명 (6번 인덱스, 또는 5번 인덱스)
+            if (parts.length > 5) {
+                emp.setDepartment(parts[5].trim());
             }
+            
+            // 직급 (7번 인덱스, 또는 6번 인덱스)
+            if (parts.length > 6) {
+                emp.setPosition(parts[6].trim());
+            }
+            
+            // 시급은 실제 데이터에 없으므로 기본값
+            emp.setHourlyWage(0);
             emp.setIsActive(true);
+            
+            logger.debug("파싱 성공: {} ({})", emp.getName(), emp.getDepartment());
             return emp;
         } catch (Exception e) {
             logger.warn("줄 파싱 실패: {}", line);
@@ -132,20 +142,30 @@ public class EmployeeImportService {
 
     private Employee parseTXTLine(String line) {
         try {
-            // 탭 또는 쉼표로 구분
-            String[] parts = line.contains("\t") ? line.split("\t") : line.split(",");
-            if (parts.length < 5) return null;
+            // 탭으로 구분 (20-19개 필드)
+            String[] parts = line.split("\t");
+            if (parts.length < 4) return null;
 
             Employee emp = new Employee();
-            emp.setEmployeeNumber(parts[0].trim());
-            emp.setName(parts[1].trim());
-            emp.setDepartment(parts[2].trim());
-            emp.setPosition(parts[3].trim());
-            emp.setHourlyWage(Integer.parseInt(parts[4].trim()));
-            if (parts.length > 5 && !parts[5].trim().isEmpty()) {
-                emp.setHireDate(LocalDate.parse(parts[5].trim(), DateTimeFormatter.ISO_LOCAL_DATE));
+            
+            // 형식: 날짜(0), 시간(1), 사원번호(2), 이름(3), 부서코드(4), 부서명(5), 직급(6), ...
+            
+            emp.setEmployeeNumber(parts[2].trim());
+            emp.setName(parts[3].trim());
+            
+            if (parts.length > 5) {
+                emp.setDepartment(parts[5].trim());
             }
+            
+            if (parts.length > 6) {
+                emp.setPosition(parts[6].trim());
+            }
+            
+            // 입사일이 있으면 파싱 (부서명에서 찾기 어려우므로 생략)
+            emp.setHourlyWage(0);
             emp.setIsActive(true);
+            
+            logger.debug("파싱 성공: {} ({})", emp.getName(), emp.getDepartment());
             return emp;
         } catch (Exception e) {
             logger.warn("줄 파싱 실패: {}", line);
@@ -156,17 +176,17 @@ public class EmployeeImportService {
     private Employee parseExcelRow(Row row) {
         try {
             Employee emp = new Employee();
-            emp.setEmployeeNumber(getCellValue(row.getCell(0)));
-            emp.setName(getCellValue(row.getCell(1)));
-            emp.setDepartment(getCellValue(row.getCell(2)));
-            emp.setPosition(getCellValue(row.getCell(3)));
-            emp.setHourlyWage(Integer.parseInt(getCellValue(row.getCell(4))));
             
-            String hireDate = getCellValue(row.getCell(5));
-            if (hireDate != null && !hireDate.isEmpty()) {
-                emp.setHireDate(LocalDate.parse(hireDate, DateTimeFormatter.ISO_LOCAL_DATE));
-            }
+            // 엑셀 셀 인덱스: 0=날짜, 1=시간, 2=사원번호, 3=이름, 4=부서코드, 5=부서명, 6=직급, ...
+            
+            emp.setEmployeeNumber(getCellValue(row.getCell(2)));
+            emp.setName(getCellValue(row.getCell(3)));
+            emp.setDepartment(getCellValue(row.getCell(5)));
+            emp.setPosition(getCellValue(row.getCell(6)));
+            emp.setHourlyWage(0);
             emp.setIsActive(true);
+            
+            logger.debug("파싱 성공: {} ({})", emp.getName(), emp.getDepartment());
             return emp;
         } catch (Exception e) {
             logger.warn("행 파싱 실패: {}", row.getRowNum());
@@ -190,8 +210,11 @@ public class EmployeeImportService {
         int count = 0;
         for (Employee emp : employees) {
             try {
-                employeeService.saveEmployee(emp);
-                count++;
+                // 중복 확인 (사원번호 기준)
+                if (emp.getEmployeeNumber() != null && !emp.getEmployeeNumber().isEmpty()) {
+                    employeeService.saveEmployee(emp);
+                    count++;
+                }
             } catch (Exception e) {
                 logger.error("직원 저장 실패: {}", emp.getName(), e);
             }
