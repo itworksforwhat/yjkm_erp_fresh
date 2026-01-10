@@ -2,6 +2,7 @@ package com.yjkm.payroll.ui;
 
 import com.yjkm.payroll.model.Employee;
 import com.yjkm.payroll.service.EmployeeService;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -18,7 +19,7 @@ public class EmployeeController {
     private final EmployeeService employeeService = new EmployeeService();
     private final ObservableList<Employee> employees = FXCollections.observableArrayList();
 
-    // UI 컸라모 저장
+    // UI 캐러모 저장
     private TableView<Employee> employeeTable;
     private TextField searchField;
     private TextField numField;
@@ -37,7 +38,10 @@ public class EmployeeController {
         root.setTop(createSearchPanel());
         root.setCenter(createTablePanel());
         root.setRight(createDetailForm());
-        loadEmployees();
+        
+        // UI 먼저 보여주고 나중에 DB 로드 (백그라운드 스레드)
+        Platform.runLater(this::loadEmployeesAsync);
+        
         return root;
     }
 
@@ -190,6 +194,25 @@ public class EmployeeController {
         return vbox;
     }
 
+    // 백그라운드에서 직원 로드 (UI 블로킹 안 함)
+    private void loadEmployeesAsync() {
+        Thread thread = new Thread(() -> {
+            try {
+                var empList = employeeService.getAllEmployees();
+                Platform.runLater(() -> {
+                    employees.clear();
+                    employees.addAll(empList);
+                    logger.info("✅ 직원 목록 로드 완료: {} 명", employees.size());
+                });
+            } catch (Exception e) {
+                logger.warn("⚠️ 직원 목록 로드 실패 (무시 가능): {}", e.getMessage());
+                // 데이터베이스가 없어도 UI는 계속 작동
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
     private void loadEmployees() {
         try {
             employees.clear();
@@ -197,7 +220,6 @@ public class EmployeeController {
             logger.info("✅ 직원 목록 로드 완료: {} 명", employees.size());
         } catch (Exception e) {
             logger.error("❌ 직원 목록 로드 실패", e);
-            showError("직원 목록을 불러올 수 없습니다", e.getMessage());
         }
     }
 
