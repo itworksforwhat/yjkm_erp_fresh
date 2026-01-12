@@ -66,24 +66,24 @@ public class SecomSyncService {
     }
 
     /**
-     * SQL 쿼리 생성
+     * SQL 쿼리 생성 (MySQL)
      * 실제 세콤 DB 구조에 맞게 수정이 필요합니다.
      */
     private String buildSelectQuery(SecomConfig config, LocalDate startDate, LocalDate endDate) {
         String tableName = config.getTableName();
 
-        // 일반적인 세콤 DB 구조를 가정한 쿼리
+        // MySQL용 세콤 DB 구조를 가정한 쿼리
         // 실제 환경에서는 컬럼명을 확인하고 수정해야 합니다
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT ");
-        sql.append("사번, ");              // 또는 EMP_NO, EMPLOYEE_NO 등
-        sql.append("성명, ");              // 또는 EMP_NAME, NAME 등
-        sql.append("출입일시, ");          // 또는 INOUT_TIME, ACCESS_TIME 등
-        sql.append("출입구분 ");           // 또는 INOUT_TYPE, ACCESS_TYPE 등 (출근/퇴근 구분)
+        sql.append("EMP_NO, ");            // 사번 (실제 컬럼명에 맞게 수정: 사번, EMP_NO, EMPLOYEE_NO 등)
+        sql.append("EMP_NAME, ");          // 성명 (실제 컬럼명에 맞게 수정: 성명, EMP_NAME, NAME 등)
+        sql.append("INOUT_TIME, ");        // 출입일시 (실제 컬럼명에 맞게 수정: 출입일시, INOUT_TIME, ACCESS_TIME 등)
+        sql.append("INOUT_TYPE ");         // 출입구분 (실제 컬럼명에 맞게 수정: 출입구분, INOUT_TYPE, ACCESS_TYPE 등)
         sql.append("FROM ").append(tableName).append(" ");
-        sql.append("WHERE 출입일시 >= '").append(startDate).append("' ");
-        sql.append("AND 출입일시 < '").append(endDate.plusDays(1)).append("' ");
-        sql.append("ORDER BY 사번, 출입일시");
+        sql.append("WHERE DATE(INOUT_TIME) >= '").append(startDate).append("' ");
+        sql.append("AND DATE(INOUT_TIME) <= '").append(endDate).append("' ");
+        sql.append("ORDER BY EMP_NO, INOUT_TIME");
 
         return sql.toString();
     }
@@ -162,9 +162,9 @@ public class SecomSyncService {
         Map<String, Map<LocalDate, List<Map<String, Object>>>> grouped = new HashMap<>();
 
         for (Map<String, Object> record : secomData) {
-            // 실제 컬럼명에 맞게 수정 필요
-            String empNo = getStringValue(record, "사번", "EMP_NO", "EMPLOYEE_NO");
-            LocalDateTime inoutTime = getDateTimeValue(record, "출입일시", "INOUT_TIME", "ACCESS_TIME");
+            // MySQL용 컬럼명 (영문 우선)
+            String empNo = getStringValue(record, "EMP_NO", "EMPLOYEE_NO", "사번");
+            LocalDateTime inoutTime = getDateTimeValue(record, "INOUT_TIME", "ACCESS_TIME", "출입일시");
 
             if (empNo == null || inoutTime == null) {
                 continue;
@@ -198,8 +198,8 @@ public class SecomSyncService {
         LocalTime checkOut = null;
 
         for (Map<String, Object> record : dayRecords) {
-            LocalDateTime inoutTime = getDateTimeValue(record, "출입일시", "INOUT_TIME", "ACCESS_TIME");
-            String inoutType = getStringValue(record, "출입구분", "INOUT_TYPE", "ACCESS_TYPE");
+            LocalDateTime inoutTime = getDateTimeValue(record, "INOUT_TIME", "ACCESS_TIME", "출입일시");
+            String inoutType = getStringValue(record, "INOUT_TYPE", "ACCESS_TYPE", "출입구분");
 
             if (inoutTime == null) {
                 continue;
@@ -249,8 +249,8 @@ public class SecomSyncService {
         LocalTime checkOut = null;
 
         for (Map<String, Object> record : dayRecords) {
-            LocalDateTime inoutTime = getDateTimeValue(record, "출입일시", "INOUT_TIME", "ACCESS_TIME");
-            String inoutType = getStringValue(record, "출입구분", "INOUT_TYPE", "ACCESS_TYPE");
+            LocalDateTime inoutTime = getDateTimeValue(record, "INOUT_TIME", "ACCESS_TIME", "출입일시");
+            String inoutType = getStringValue(record, "INOUT_TYPE", "ACCESS_TYPE", "출입구분");
 
             if (inoutTime == null) {
                 continue;

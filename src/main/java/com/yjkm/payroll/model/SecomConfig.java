@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 /**
  * 세콤 연동 설정 정보
- * ODBC 데이터베이스 연결 정보를 저장합니다.
+ * MySQL 데이터베이스 연결 정보를 저장합니다.
  */
 @Entity
 @Table(name = "secom_config")
@@ -14,10 +14,9 @@ public class SecomConfig {
     private Long id;
 
     @Column(nullable = false)
-    private String dsnName;           // ODBC 데이터 소스 이름 (예: "secomdb")
+    private String serverAddress;     // MySQL 서버 주소 (예: "localhost", "192.168.0.100")
 
-    private String serverAddress;     // 서버 주소 (필요한 경우)
-    private Integer serverPort;       // 서버 포트 (필요한 경우)
+    private Integer serverPort;       // MySQL 서버 포트 (기본값: 3306)
 
     private String databaseName;      // 데이터베이스 이름 (기본값: "secomdb")
 
@@ -36,6 +35,7 @@ public class SecomConfig {
 
     // 기본 생성자
     public SecomConfig() {
+        this.serverPort = 3306;
         this.databaseName = "secomdb";
         this.tableName = "TB_INOUT";
         this.isActive = false;
@@ -48,14 +48,6 @@ public class SecomConfig {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getDsnName() {
-        return dsnName;
-    }
-
-    public void setDsnName(String dsnName) {
-        this.dsnName = dsnName;
     }
 
     public String getServerAddress() {
@@ -124,24 +116,33 @@ public class SecomConfig {
 
     /**
      * JDBC URL 생성
-     * 일반적인 JDBC-ODBC 연결 문자열을 반환합니다.
+     * MySQL 데이터베이스 연결 문자열을 반환합니다.
      */
     public String getJdbcUrl() {
-        // ODBC DSN을 사용하는 경우
-        if (dsnName != null && !dsnName.isEmpty()) {
-            return "jdbc:odbc:" + dsnName;
-        }
-
-        // 서버 주소를 사용하는 경우 (MS SQL Server 예시)
+        // 서버 주소를 사용하는 경우 (MySQL)
         if (serverAddress != null && !serverAddress.isEmpty()) {
-            String url = "jdbc:sqlserver://" + serverAddress;
+            StringBuilder url = new StringBuilder("jdbc:mysql://");
+            url.append(serverAddress);
+
+            // 포트 지정 (기본값: 3306)
             if (serverPort != null) {
-                url += ":" + serverPort;
+                url.append(":").append(serverPort);
+            } else {
+                url.append(":3306");
             }
+
+            // 데이터베이스 이름
             if (databaseName != null && !databaseName.isEmpty()) {
-                url += ";databaseName=" + databaseName;
+                url.append("/").append(databaseName);
             }
-            return url;
+
+            // MySQL 연결 옵션
+            url.append("?useSSL=false");
+            url.append("&serverTimezone=Asia/Seoul");
+            url.append("&characterEncoding=UTF-8");
+            url.append("&allowPublicKeyRetrieval=true");
+
+            return url.toString();
         }
 
         return null;

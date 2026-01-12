@@ -18,7 +18,6 @@ public class SecomConfigController {
     private static final Logger logger = LoggerFactory.getLogger(SecomConfigController.class);
     private final SecomConfigService configService = new SecomConfigService();
 
-    private TextField dsnNameField;
     private TextField serverAddressField;
     private TextField serverPortField;
     private TextField databaseNameField;
@@ -43,7 +42,7 @@ public class SecomConfigController {
         titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
         // 설명
-        Label descLabel = new Label("세콤 매니저(에스원) 데이터베이스 연동 설정을 관리합니다.");
+        Label descLabel = new Label("세콤 매니저(에스원) MySQL 데이터베이스 연동 설정을 관리합니다.");
         descLabel.setStyle("-fx-text-fill: gray;");
 
         // 설정 폼
@@ -75,51 +74,35 @@ public class SecomConfigController {
 
         int row = 0;
 
-        // DSN 이름
-        grid.add(new Label("ODBC DSN 이름:"), 0, row);
-        dsnNameField = new TextField();
-        dsnNameField.setPromptText("예: secomdb");
-        dsnNameField.setPrefWidth(300);
-        grid.add(dsnNameField, 1, row++);
-
-        // 구분선
-        Separator sep1 = new Separator();
-        GridPane.setColumnSpan(sep1, 2);
-        grid.add(sep1, 0, row++);
-
-        Label orLabel = new Label("또는 직접 서버 정보 입력:");
-        orLabel.setStyle("-fx-font-style: italic; -fx-text-fill: gray;");
-        GridPane.setColumnSpan(orLabel, 2);
-        grid.add(orLabel, 0, row++);
-
-        // 서버 주소
-        grid.add(new Label("서버 주소:"), 0, row);
+        // MySQL 서버 주소
+        grid.add(new Label("MySQL 서버 주소: *"), 0, row);
         serverAddressField = new TextField();
         serverAddressField.setPromptText("예: localhost 또는 192.168.0.100");
         serverAddressField.setPrefWidth(300);
         grid.add(serverAddressField, 1, row++);
 
         // 서버 포트
-        grid.add(new Label("서버 포트:"), 0, row);
-        serverPortField = new TextField();
-        serverPortField.setPromptText("예: 1433 (MS SQL Server)");
+        grid.add(new Label("MySQL 포트:"), 0, row);
+        serverPortField = new TextField("3306");
+        serverPortField.setPromptText("기본값: 3306");
         grid.add(serverPortField, 1, row++);
 
         // 데이터베이스 이름
-        grid.add(new Label("데이터베이스 이름:"), 0, row);
+        grid.add(new Label("데이터베이스 이름: *"), 0, row);
         databaseNameField = new TextField("secomdb");
+        databaseNameField.setPromptText("예: secomdb");
         grid.add(databaseNameField, 1, row++);
 
         // 사용자명
-        grid.add(new Label("사용자명:"), 0, row);
+        grid.add(new Label("MySQL 사용자명: *"), 0, row);
         usernameField = new TextField();
-        usernameField.setPromptText("(선택사항)");
+        usernameField.setPromptText("예: secom_user");
         grid.add(usernameField, 1, row++);
 
         // 비밀번호
-        grid.add(new Label("비밀번호:"), 0, row);
+        grid.add(new Label("MySQL 비밀번호: *"), 0, row);
         passwordField = new PasswordField();
-        passwordField.setPromptText("(선택사항)");
+        passwordField.setPromptText("데이터베이스 비밀번호");
         grid.add(passwordField, 1, row++);
 
         // 구분선
@@ -170,9 +153,8 @@ public class SecomConfigController {
         try {
             currentConfig = configService.getActiveConfig();
             if (currentConfig != null) {
-                dsnNameField.setText(currentConfig.getDsnName());
                 serverAddressField.setText(currentConfig.getServerAddress() != null ? currentConfig.getServerAddress() : "");
-                serverPortField.setText(currentConfig.getServerPort() != null ? currentConfig.getServerPort().toString() : "");
+                serverPortField.setText(currentConfig.getServerPort() != null ? currentConfig.getServerPort().toString() : "3306");
                 databaseNameField.setText(currentConfig.getDatabaseName());
                 usernameField.setText(currentConfig.getUsername() != null ? currentConfig.getUsername() : "");
                 passwordField.setText(currentConfig.getPassword() != null ? currentConfig.getPassword() : "");
@@ -215,9 +197,23 @@ public class SecomConfigController {
     private void saveConfig() {
         try {
             // 입력 검증
-            if (dsnNameField.getText().trim().isEmpty() &&
-                    (serverAddressField.getText().trim().isEmpty() || databaseNameField.getText().trim().isEmpty())) {
-                showStatus("DSN 이름 또는 서버 정보를 입력해주세요.", true);
+            if (serverAddressField.getText().trim().isEmpty()) {
+                showStatus("MySQL 서버 주소를 입력해주세요.", true);
+                return;
+            }
+
+            if (databaseNameField.getText().trim().isEmpty()) {
+                showStatus("데이터베이스 이름을 입력해주세요.", true);
+                return;
+            }
+
+            if (usernameField.getText().trim().isEmpty()) {
+                showStatus("MySQL 사용자명을 입력해주세요.", true);
+                return;
+            }
+
+            if (passwordField.getText().trim().isEmpty()) {
+                showStatus("MySQL 비밀번호를 입력해주세요.", true);
                 return;
             }
 
@@ -247,20 +243,22 @@ public class SecomConfigController {
     private SecomConfig createConfigFromForm() {
         SecomConfig config = new SecomConfig();
 
-        config.setDsnName(dsnNameField.getText().trim());
-        config.setServerAddress(serverAddressField.getText().trim().isEmpty() ? null : serverAddressField.getText().trim());
+        config.setServerAddress(serverAddressField.getText().trim());
 
+        // 포트 번호 처리 (기본값: 3306)
         if (!serverPortField.getText().trim().isEmpty()) {
             try {
                 config.setServerPort(Integer.parseInt(serverPortField.getText().trim()));
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("포트 번호는 숫자여야 합니다.");
             }
+        } else {
+            config.setServerPort(3306);
         }
 
         config.setDatabaseName(databaseNameField.getText().trim());
-        config.setUsername(usernameField.getText().trim().isEmpty() ? null : usernameField.getText().trim());
-        config.setPassword(passwordField.getText().trim().isEmpty() ? null : passwordField.getText().trim());
+        config.setUsername(usernameField.getText().trim());
+        config.setPassword(passwordField.getText().trim());
         config.setTableName(tableNameField.getText().trim());
         config.setIsActive(activeCheckBox.isSelected());
 
@@ -271,9 +269,8 @@ public class SecomConfigController {
      * 폼 초기화
      */
     private void resetForm() {
-        dsnNameField.clear();
         serverAddressField.clear();
-        serverPortField.clear();
+        serverPortField.setText("3306");
         databaseNameField.setText("secomdb");
         usernameField.clear();
         passwordField.clear();
