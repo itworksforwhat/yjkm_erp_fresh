@@ -13,19 +13,17 @@ public class SecomConfig {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String serverAddress;     // MySQL 서버 주소 (예: "localhost", "192.168.0.100")
 
     private Integer serverPort;       // MySQL 서버 포트 (기본값: 3306)
 
     private String databaseName;      // 데이터베이스 이름 (기본값: "secomdb")
 
-    private String username;          // 사용자명 (필요한 경우)
+    private String username;          // MySQL 사용자명
 
     @Column(length = 500)
-    private String password;          // 암호화된 비밀번호 (필요한 경우)
+    private String password;          // MySQL 비밀번호
 
-    @Column(nullable = false)
     private String tableName;         // 출퇴근 데이터 테이블 이름 (예: "TB_INOUT")
 
     @Column(length = 1000)
