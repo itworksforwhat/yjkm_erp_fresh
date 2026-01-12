@@ -28,13 +28,13 @@ public class SecomConnectionUtil {
             throw new IllegalArgumentException("세콤 설정이 null입니다.");
         }
 
-        if (!config.getIsActive()) {
+        if (config.getIsActive() == null || !config.getIsActive()) {
             throw new IllegalStateException("세콤 연동이 비활성화 상태입니다.");
         }
 
         String jdbcUrl = config.getJdbcUrl();
         if (jdbcUrl == null || jdbcUrl.isEmpty()) {
-            throw new IllegalArgumentException("JDBC URL을 생성할 수 없습니다. DSN 또는 서버 주소를 확인하세요.");
+            throw new IllegalArgumentException("JDBC URL을 생성할 수 없습니다. MySQL 서버 주소를 확인하세요.");
         }
 
         logger.info("세콤 데이터베이스 연결 시도: {}", jdbcUrl);
