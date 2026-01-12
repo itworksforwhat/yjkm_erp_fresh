@@ -1,6 +1,8 @@
 package com.yjkm.payroll;
 
 import com.yjkm.payroll.ui.EmployeeController;
+import com.yjkm.payroll.ui.AttendanceController;
+import com.yjkm.payroll.ui.SecomConfigController;
 import com.yjkm.payroll.util.HibernateUtil;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -48,11 +50,22 @@ public class Main extends Application {
             Tab employeeTab = new Tab("직원 관리", empController.createEmployeeView());
             employeeTab.setClosable(false);
 
+            // 출퇴근 관리 탭
+            AttendanceController attendanceController = new AttendanceController();
+            Tab attendanceTab = new Tab("출퇴근 관리", attendanceController.createAttendanceView());
+            attendanceTab.setClosable(false);
+
+            // 세콤 연동 설정 탭
+            SecomConfigController secomConfigController = new SecomConfigController();
+            Tab secomConfigTab = new Tab("세콤 연동 설정", secomConfigController.createSecomConfigView());
+            secomConfigTab.setClosable(false);
+
             tabPane.getTabs().addAll(
-                    employeeTab
+                    employeeTab,
+                    attendanceTab,
+                    secomConfigTab
                     // 나중에 추가할 탭들:
                     // - 근무시간 관리
-                    // - 근태 관리
                     // - 공제/세금 설정
                     // - 급여 계산
                     // - 리포트
