@@ -19,7 +19,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <javafx.version>21.0.1</javafx.version>
+        <javafx.version>21.0.2</javafx.version>
     </properties>
 
     <dependencies>
