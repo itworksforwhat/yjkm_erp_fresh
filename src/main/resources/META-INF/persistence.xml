@@ -11,6 +11,7 @@
         <class>com.yjkm.payroll.model.Attendance</class>
         <class>com.yjkm.payroll.model.Deduction</class>
         <class>com.yjkm.payroll.model.Payroll</class>
+        <class>com.yjkm.payroll.model.SecomConfig</class>
 
         <properties>
             <!-- SQLite Database -->
