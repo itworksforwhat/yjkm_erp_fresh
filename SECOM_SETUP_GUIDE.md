@@ -1,6 +1,6 @@
-# 세콤(에스원) 연동 가이드
+# 세콤(에스원) MySQL 연동 가이드
 
-YJKM 급여 ERP v3.0에서 세콤 출퇴근 시스템과 연동하는 방법을 안내합니다.
+YJKM 급여 ERP v3.0에서 세콤 출퇴근 시스템(MySQL)과 연동하는 방법을 안내합니다.
 
 ## 목차
 1. [세콤 연동 개요](#세콤-연동-개요)
@@ -13,11 +13,11 @@ YJKM 급여 ERP v3.0에서 세콤 출퇴근 시스템과 연동하는 방법을 
 
 ## 세콤 연동 개요
 
-세콤 연동 기능을 사용하면 에스원 세콤 매니저에 저장된 출퇴근 데이터를 자동으로 가져올 수 있습니다.
+세콤 연동 기능을 사용하면 에스원 세콤 매니저의 MySQL 데이터베이스에 저장된 출퇴근 데이터를 자동으로 가져올 수 있습니다.
 
 ### 연동 방식
-- **JDBC를 통한 데이터베이스 직접 연동**
-- 세콤링크(ODBC) 또는 직접 DB 연결 지원
+- **JDBC를 통한 MySQL 데이터베이스 직접 연동**
+- 세콤 매니저 MySQL 서버에 직접 연결
 - 주기적 또는 수동 데이터 동기화
 
 ### 지원 기능
@@ -32,31 +32,32 @@ YJKM 급여 ERP v3.0에서 세콤 출퇴근 시스템과 연동하는 방법을 
 
 ### 1. 세콤 매니저 설치 확인
 - 세콤 매니저(근태·식당) 프로그램이 설치되어 있어야 합니다.
-- 세콤링크 기능이 활성화되어 있어야 합니다.
+- MySQL 데이터베이스가 구성되어 있어야 합니다.
 
-### 2. 데이터베이스 접근 권한
-다음 중 하나의 방법으로 세콤 데이터베이스에 접근할 수 있어야 합니다:
+### 2. MySQL 데이터베이스 접근 권한
+다음 정보가 필요합니다:
 
-#### 방법 1: ODBC DSN 사용
-- Windows ODBC 데이터 원본 관리자에서 DSN 생성
-- 일반적으로 DSN 이름: `secomdb`
-
-#### 방법 2: 직접 서버 연결
-- 세콤 데이터베이스 서버 주소
-- 포트 번호 (예: MS SQL Server의 경우 1433)
-- 데이터베이스 이름
-- 사용자명 및 비밀번호
+- **MySQL 서버 주소** (예: `localhost`, `192.168.0.100`)
+- **MySQL 포트 번호** (기본값: `3306`)
+- **데이터베이스 이름** (예: `secomdb`)
+- **MySQL 사용자명** (예: `secom_user`)
+- **MySQL 비밀번호**
 
 ### 3. 데이터베이스 구조 확인
-세콤 데이터베이스의 출퇴근 테이블 정보를 확인해야 합니다:
+세콤 MySQL 데이터베이스의 출퇴근 테이블 정보를 확인해야 합니다:
+
 - **테이블 이름** (예: `TB_INOUT`, `출입기록` 등)
 - **컬럼 구조**:
-  - 사번 컬럼 (예: `사번`, `EMP_NO`, `EMPLOYEE_NO`)
-  - 성명 컬럼 (예: `성명`, `EMP_NAME`, `NAME`)
-  - 출입일시 컬럼 (예: `출입일시`, `INOUT_TIME`, `ACCESS_TIME`)
-  - 출입구분 컬럼 (예: `출입구분`, `INOUT_TYPE`, `ACCESS_TYPE`)
+  - 사번 컬럼 (예: `EMP_NO`, `EMPLOYEE_NO`, `사번`)
+  - 성명 컬럼 (예: `EMP_NAME`, `NAME`, `성명`)
+  - 출입일시 컬럼 (예: `INOUT_TIME`, `ACCESS_TIME`, `출입일시`)
+  - 출입구분 컬럼 (예: `INOUT_TYPE`, `ACCESS_TYPE`, `출입구분`)
 
 **⚠️ 중요**: 실제 세콤 데이터베이스의 컬럼명은 회사마다 다를 수 있습니다.
+
+### 4. 네트워크 접근 확인
+- 세콤 MySQL 서버가 네트워크를 통해 접근 가능한지 확인
+- 방화벽에서 MySQL 포트(기본 3306) 허용 여부 확인
 
 ---
 
@@ -66,32 +67,29 @@ YJKM 급여 ERP v3.0에서 세콤 출퇴근 시스템과 연동하는 방법을 
 
 프로그램 실행 후 상단의 **"세콤 연동 설정"** 탭을 클릭합니다.
 
-### 2단계: 연결 정보 입력
+### 2단계: MySQL 연결 정보 입력
 
-#### ODBC DSN 사용 시
 ```
-ODBC DSN 이름: secomdb
-```
-나머지 필드는 비워두고, 아래 설정만 입력:
-```
-테이블 이름: TB_INOUT
-✓ 이 설정 활성화
-```
-
-#### 직접 서버 연결 시
-```
-서버 주소: 192.168.0.100 (또는 localhost)
-서버 포트: 1433
+MySQL 서버 주소: 192.168.0.100 (또는 localhost)
+MySQL 포트: 3306
 데이터베이스 이름: secomdb
-사용자명: secom_user
-비밀번호: ********
-테이블 이름: TB_INOUT
+MySQL 사용자명: secom_user
+MySQL 비밀번호: ********
+출퇴근 테이블 이름: TB_INOUT
 ✓ 이 설정 활성화
 ```
+
+**필드 설명:**
+- **MySQL 서버 주소**: 세콤 MySQL이 설치된 서버의 IP 주소 또는 호스트명
+- **MySQL 포트**: MySQL 서버 포트 (기본값: 3306)
+- **데이터베이스 이름**: 세콤 데이터가 저장된 데이터베이스명
+- **MySQL 사용자명**: 읽기 권한이 있는 MySQL 계정
+- **MySQL 비밀번호**: 해당 계정의 비밀번호
+- **출퇴근 테이블 이름**: 출퇴근 데이터가 저장된 테이블명
 
 ### 3단계: 연결 테스트
 
-**"연결 테스트"** 버튼을 클릭하여 세콤 데이터베이스 연결을 확인합니다.
+**"연결 테스트"** 버튼을 클릭하여 MySQL 데이터베이스 연결을 확인합니다.
 
 - ✓ **성공 메시지**: "연결 성공! 세콤 데이터베이스에 정상적으로 연결되었습니다."
 - ✗ **실패 시**: 설정을 다시 확인하거나 [문제 해결](#문제-해결) 섹션을 참고하세요.
@@ -111,7 +109,7 @@ ODBC DSN 이름: secomdb
 ### 2단계: 조회 기간 선택
 
 - **시작일**: 데이터를 가져올 시작 날짜
-- **종료일**: 데이터를 가져올 종료 날짜
+- **종료일**: 데이터를 가져올 종료일
 
 예시:
 ```
@@ -122,7 +120,7 @@ ODBC DSN 이름: secomdb
 
 **"세콤 데이터 가져오기"** 버튼을 클릭합니다.
 
-- 프로그램이 세콤 데이터베이스에서 출퇴근 기록을 가져옵니다.
+- 프로그램이 세콤 MySQL 데이터베이스에서 출퇴근 기록을 가져옵니다.
 - 직원 사번을 기준으로 매칭하여 로컬 데이터베이스에 저장합니다.
 - 중복된 기록은 자동으로 업데이트됩니다.
 
@@ -141,59 +139,104 @@ ODBC DSN 이름: secomdb
 
 ### 연결 실패 시
 
-#### 1. DSN 설정 확인
-```
-제어판 > 관리 도구 > ODBC 데이터 원본(64비트)
-→ 시스템 DSN 탭에서 "secomdb" 확인
-```
-
-#### 2. 네트워크 연결 확인
+#### 1. MySQL 서버 확인
 ```bash
-# 서버 연결 테스트 (명령 프롬프트)
+# 서버 연결 테스트 (명령 프롬프트 또는 터미널)
 ping 192.168.0.100
-telnet 192.168.0.100 1433
+
+# MySQL 포트 확인
+telnet 192.168.0.100 3306
 ```
 
-#### 3. 방화벽 설정 확인
-- Windows 방화벽에서 세콤 데이터베이스 포트(1433) 허용
-- 안티바이러스 프로그램 예외 설정
+또는 MySQL 클라이언트로 직접 연결 테스트:
+```bash
+mysql -h 192.168.0.100 -P 3306 -u secom_user -p
+```
 
-#### 4. 사용자 권한 확인
-- 세콤 데이터베이스에 읽기 권한이 있는지 확인
-- IT 관리자 또는 에스원 담당자에게 문의
+#### 2. 방화벽 설정 확인
+- Windows 방화벽에서 MySQL 포트(3306) 허용
+- 안티바이러스 프로그램 예외 설정
+- MySQL 서버 방화벽 설정 확인
+
+#### 3. MySQL 사용자 권한 확인
+MySQL 서버에서 사용자 권한을 확인:
+```sql
+-- MySQL 서버에 접속 후
+SHOW GRANTS FOR 'secom_user'@'%';
+
+-- 필요한 권한: SELECT 권한이 있어야 함
+-- 권한 부여 예시 (관리자 권한 필요):
+GRANT SELECT ON secomdb.* TO 'secom_user'@'%';
+FLUSH PRIVILEGES;
+```
+
+#### 4. MySQL 서버 원격 접속 허용 확인
+MySQL 서버의 `my.cnf` 또는 `my.ini` 파일 확인:
+```ini
+[mysqld]
+bind-address = 0.0.0.0
+# 또는
+# bind-address = 192.168.0.100
+```
+
+`bind-address`가 `127.0.0.1`로만 설정되어 있으면 원격 접속이 불가능합니다.
 
 ### 데이터가 가져와지지 않을 때
 
 #### 1. 테이블 이름 확인
-세콤 데이터베이스에 직접 접속하여 테이블 이름 확인:
+MySQL 데이터베이스에 접속하여 테이블 이름 확인:
 ```sql
--- SQL Server 예시
-SELECT * FROM INFORMATION_SCHEMA.TABLES;
+-- 데이터베이스 선택
+USE secomdb;
+
+-- 테이블 목록 조회
+SHOW TABLES;
 ```
 
 #### 2. 컬럼명 확인
 출퇴근 테이블의 컬럼 구조 확인:
 ```sql
--- SQL Server 예시
-SELECT * FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'TB_INOUT';
+-- 테이블 구조 확인
+DESC TB_INOUT;
+
+-- 또는
+SHOW COLUMNS FROM TB_INOUT;
+
+-- 샘플 데이터 확인
+SELECT * FROM TB_INOUT LIMIT 5;
 ```
 
 #### 3. 컬럼명이 다른 경우
-`SecomSyncService.java` 파일의 `buildSelectQuery` 메서드에서 실제 컬럼명으로 수정:
+`SecomSyncService.java` 파일의 79-82번째 줄에서 실제 컬럼명으로 수정:
 
+**현재 코드 (기본 영문 컬럼명 가정):**
 ```java
-// 현재 코드 (일반적인 구조)
+sql.append("EMP_NO, ");            // 사번
+sql.append("EMP_NAME, ");          // 성명
+sql.append("INOUT_TIME, ");        // 출입일시
+sql.append("INOUT_TYPE ");         // 출입구분
+```
+
+**실제 세콤 DB 구조에 맞게 수정 예시:**
+```java
+// 예시 1: 한글 컬럼명인 경우
 sql.append("사번, ");
 sql.append("성명, ");
 sql.append("출입일시, ");
 sql.append("출입구분 ");
 
-// 실제 세콤 DB 구조에 맞게 수정 예시
-sql.append("EMP_NO, ");      // 사번 컬럼명이 EMP_NO인 경우
-sql.append("EMP_NAME, ");    // 성명 컬럼명이 EMP_NAME인 경우
-sql.append("INOUT_TIME, ");  // 출입일시 컬럼명이 INOUT_TIME인 경우
-sql.append("INOUT_TYPE ");   // 출입구분 컬럼명이 INOUT_TYPE인 경우
+// 예시 2: 다른 영문 컬럼명인 경우
+sql.append("EMPLOYEE_NO, ");
+sql.append("NAME, ");
+sql.append("ACCESS_TIME, ");
+sql.append("ACCESS_TYPE ");
+```
+
+**WHERE 절과 ORDER BY도 함께 수정:**
+```java
+sql.append("WHERE DATE(INOUT_TIME) >= '").append(startDate).append("' ");
+sql.append("AND DATE(INOUT_TIME) <= '").append(endDate).append("' ");
+sql.append("ORDER BY EMP_NO, INOUT_TIME");
 ```
 
 ### 직원 매칭 실패 시
@@ -206,10 +249,53 @@ sql.append("INOUT_TYPE ");   // 출입구분 컬럼명이 INOUT_TYPE인 경우
 1. **직원 관리** 탭에서 모든 직원의 사번이 정확히 입력되었는지 확인
 2. 세콤 데이터의 사번 형식과 ERP 사번 형식을 일치시킴
    - 예: 세콤에서 "0001"이면 ERP에도 "0001"로 입력 (앞의 0 포함)
+   - 또는 세콤에서 "1"이면 ERP에도 "1"로 입력
+
+#### 세콤 데이터 사번 확인
+```sql
+-- 세콤 DB에서 사번 형식 확인
+SELECT DISTINCT EMP_NO FROM TB_INOUT ORDER BY EMP_NO LIMIT 20;
+```
+
+### 타임존 관련 오류
+
+MySQL 연결 시 타임존 에러가 발생하는 경우:
+
+**오류 메시지 예시:**
+```
+The server time zone value '...' is unrecognized
+```
+
+**해결 방법:**
+이미 JDBC URL에 타임존 설정이 포함되어 있습니다:
+```
+serverTimezone=Asia/Seoul
+```
+
+만약 문제가 지속되면 MySQL 서버 설정 확인:
+```sql
+-- MySQL 타임존 확인
+SELECT @@global.time_zone, @@session.time_zone;
+```
 
 ---
 
 ## 고급 설정
+
+### MySQL 연결 옵션
+JDBC URL에는 다음 옵션이 자동 설정됩니다:
+- `useSSL=false`: SSL 사용 안 함 (내부 네트워크용)
+- `serverTimezone=Asia/Seoul`: 한국 표준시 설정
+- `characterEncoding=UTF-8`: UTF-8 인코딩
+- `allowPublicKeyRetrieval=true`: 공개키 검색 허용
+
+### SSL 연결 사용 시
+보안이 중요한 환경에서는 `SecomConfig.java` 파일의 148번째 줄을 수정:
+```java
+// SSL 사용하는 경우 (useSSL=false를 useSSL=true로 변경)
+url.append("?useSSL=true");
+url.append("&serverTimezone=Asia/Seoul");
+```
 
 ### 실시간 동기화 (향후 지원 예정)
 현재는 수동으로 "세콤 데이터 가져오기" 버튼을 클릭해야 하지만, 향후 버전에서는 다음 기능이 추가될 예정입니다:
@@ -225,25 +311,33 @@ sql.append("INOUT_TYPE ");   // 출입구분 컬럼명이 INOUT_TYPE인 경우
 ## 기술 지원
 
 ### 문의처
-- **에스원 세콤**: 세콤 데이터베이스 접근 권한 및 구조 문의
-- **IT 관리자**: 네트워크, 방화벽, ODBC 설정 문의
+- **에스원 세콤**: 세콤 MySQL 데이터베이스 접근 권한 및 구조 문의
+- **IT 관리자**: 네트워크, 방화벽, MySQL 설정 문의
 - **ERP 개발팀**: 프로그램 오류 및 기능 문의
 
 ### 로그 파일
 문제 발생 시 다음 정보와 함께 문의:
 - 에러 메시지 전문
 - 콘솔 로그 (프로그램 실행 창의 로그)
-- 설정 정보 (민감한 정보 제외)
+- MySQL 버전 정보
+- 설정 정보 (비밀번호 제외)
+
+### MySQL 버전 확인
+```sql
+SELECT VERSION();
+```
 
 ---
 
 ## 참고 자료
 
+- [MySQL 공식 문서](https://dev.mysql.com/doc/)
 - [세콤 연동으로 출퇴근 관리하기 – 원티드스페이스](https://help.wantedspace.ai/hc/ko/articles/12758426641305)
-- [세콤(에스원) 연동 가이드 | Flex](https://guide.flex.team/ko/articles/10293826-세콤-연동-가이드)
+- [세콤(에스원) 연동 가이드 | Flex](https://guide.flex.team/ko/articles/10293826)
 - [에스원(SECOM)과 근태관리 연동 설정 가이드 | 다우오피스](https://care.daouoffice.co.kr/hc/ko/articles/4414637209881)
 
 ---
 
 **버전**: v3.0.0
 **최종 수정일**: 2026-01-12
+**데이터베이스**: MySQL 5.7+ / MySQL 8.0+
